@@ -22,6 +22,5 @@ public class RussianWordFormsTest {
         Assert.assertEquals("минут", RussianWordForms.getWordForm("минута", 111));
         Assert.assertEquals("минуту", RussianWordForms.getWordForm("минута", 121));
         Assert.assertEquals("минуты", RussianWordForms.getWordForm("минута", 123));
-
     }
 }
