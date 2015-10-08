@@ -20,6 +20,10 @@ public class RecentDateFormatterTest {
         now = LocalDateTime.of(2013, Month.MARCH, 1, 16, 20);
         Assert.assertEquals("366 дней назад", RecentDateFormatter.format(then, now));
 
+        now = LocalDateTime.of(2012, Month.MARCH, 1, 16, 20);
+        then = LocalDateTime.of(2012, Month.FEBRUARY, 28, 4, 19);
+        Assert.assertEquals("2 дня назад", RecentDateFormatter.format(then, now));
+
         then = LocalDateTime.of(2013, Month.MARCH, 1, 16, 20);
         Assert.assertEquals("только что", RecentDateFormatter.format(then, now));
 
