@@ -1,6 +1,7 @@
 package ru.fizteh.fivt.students.riazanovskiy.TwitterStream;
 
-import com.bytebybyte.google.geocoding.service.response.LatLng;
+import com.bytebybyte.google.geocoding.service.response.*;
+import com.bytebybyte.google.geocoding.service.standard.StandardGeocodingService;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,6 +16,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.when;
 
 
 @RunWith(PowerMockRunner.class)
@@ -55,7 +59,7 @@ public class GeocodeWrapperTest {
     }
 
     @Test
-    public void testGetCoordinatesByStringNearby1() throws IOException {
+    public void testGetCoordinatesByStringNearby() throws IOException {
         String data = "{\n \"ip\": \"93.175.31.92\",\n" +
                 "  \"hostname\": \"No Hostname\",\n" +
                 "  \"city\": \"Moscow\",\n" +
@@ -74,7 +78,7 @@ public class GeocodeWrapperTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testGetCoordinatesByStringNearby2() throws IOException {
+    public void testGetCoordinatesByStringNearbyError() throws IOException {
         String data = "{\n \"ip\": \"93.175.31.92\",\n" +
                 "  \"hostname\": \"No Hostname\",\n" +
                 "  \"city\": \"Moscow\",\n" +
@@ -85,8 +89,48 @@ public class GeocodeWrapperTest {
                 " of Moscow Institute of Physics and Technology\",\n" +
                 "  \"postal\": \"101194\"\n";
         InputStream stream = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
-        PowerMockito.when(urlMock.openStream()).thenReturn(stream);
+        when(urlMock.openStream()).thenReturn(stream);
         GeocodeWrapper.getCoordinatesByString("nearby");
     }
 
+    @Test
+    public void testGetCoordinatesByStringGoogleGeocoding() throws Exception {
+        Result[] results = {new Result()};
+        results[0].setFormattedAddress("Moscow, Russia");
+        results[0].setTypes(new Type[]{Type.LOCALITY, Type.POLITICAL});
+        Geometry geometry = new Geometry();
+        geometry.setLocation(new Location(55.755826, 37.6173));
+        geometry.setLocationType(LocationType.APPROXIMATE);
+        Viewport viewport = new Viewport();
+        viewport.setNortheast(new Location(56.009657, 37.9456611));
+        viewport.setSouthwest(new Location(55.48992699999999, 37.3193288));
+        geometry.setViewport(viewport);
+        results[0].setGeometry(geometry);
+        results[0].setAddressComponents(new AddressComponent[]{new AddressComponent()});
+        Response response = new Response();
+        response.setResults(results);
+        response.setStatus(Status.OK);
+
+        StandardGeocodingService standardGeocodingMock = PowerMockito.mock(StandardGeocodingService.class);
+        PowerMockito.whenNew(StandardGeocodingService.class).withNoArguments().thenReturn(standardGeocodingMock);
+        when(standardGeocodingMock.geocode(any())).thenReturn(response);
+
+        LatLng location = GeocodeWrapper.getCoordinatesByString("Москва");
+        Assert.assertEquals(55.755826, location.getLat(), 1.0E-08);
+        Assert.assertEquals(37.6173, location.getLng(), 1.0E-08);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGetCoordinatesByStringGoogleGeocodingError() throws Exception {
+        Result[] results = new Result[0];
+        Response response = new Response();
+        response.setResults(results);
+        response.setStatus(Status.OK);
+
+        StandardGeocodingService standardGeocodingMock = PowerMockito.mock(StandardGeocodingService.class);
+        PowerMockito.whenNew(StandardGeocodingService.class).withNoArguments().thenReturn(standardGeocodingMock);
+        when(standardGeocodingMock.geocode(any())).thenReturn(response);
+
+        GeocodeWrapper.getCoordinatesByString("Губельдючие кузявки");
+    }
 }
