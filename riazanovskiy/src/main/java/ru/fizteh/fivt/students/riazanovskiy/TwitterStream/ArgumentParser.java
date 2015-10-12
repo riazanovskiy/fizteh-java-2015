@@ -4,10 +4,10 @@ import com.beust.jcommander.Parameter;
 
 class ArgumentParser {
     @Parameter(names = {"--query", "-q"}, description = "Search query")
-    private final String keywords = "";
+    private String keywords = "";
 
     @Parameter(names = {"--place", "-p"}, description = "Tweets from this location")
-    private final String location = "";
+    private String location = "";
 
     @Parameter(names = {"--stream", "-s"}, description = "Activates stream mode. Tweets are printed continuously")
     private boolean stream;
