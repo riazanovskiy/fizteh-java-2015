@@ -115,7 +115,7 @@ class Main {
         waitUntilEndOfInput();
     }
 
-    static void waitUntilEndOfInput() {
+    private static void waitUntilEndOfInput() {
         try (Scanner scanner = new Scanner(System.in)) {
             while (scanner.hasNext()) {
                 scanner.next();
@@ -125,6 +125,13 @@ class Main {
     }
 
     static void printSingleTweet(Status status, boolean showTime) {
+        String formattedTweet = formatTweet(status, showTime);
+
+        System.out.println(formattedTweet);
+        System.out.println(new String(new char[DELIMITER_LENGTH]).replace('\0', '-'));
+    }
+
+    private static String formatTweet(Status status, boolean showTime) {
         Ansi formattedTweet = ansi();
         if (showTime) {
             formattedTweet.a('[' + RecentDateFormatter.format(status.getCreatedAt()) + "] ");
@@ -144,8 +151,6 @@ class Main {
                 formattedTweet.a(RussianWordForms.getWordForm("ретвит", status.getRetweetCount())).a(")");
             }
         }
-
-        System.out.println(formattedTweet);
-        System.out.println(new String(new char[DELIMITER_LENGTH]).replace('\0', '-'));
+        return formattedTweet.toString();
     }
 }
