@@ -3,8 +3,6 @@ package ru.fizteh.fivt.students.riazanovskiy.TwitterStream;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import com.bytebybyte.google.geocoding.service.response.LatLng;
-import org.fusesource.jansi.Ansi;
-import org.fusesource.jansi.Ansi.Color;
 import org.fusesource.jansi.AnsiConsole;
 import twitter4j.*;
 
@@ -125,32 +123,9 @@ class Main {
     }
 
     static void printSingleTweet(Status status, boolean showTime) {
-        String formattedTweet = formatTweet(status, showTime);
-
+        String formattedTweet = new TweetFormatter(status, showTime).format();
         System.out.println(formattedTweet);
         System.out.println(new String(new char[DELIMITER_LENGTH]).replace('\0', '-'));
     }
 
-    private static String formatTweet(Status status, boolean showTime) {
-        Ansi formattedTweet = ansi();
-        if (showTime) {
-            formattedTweet.a('[' + RecentDateFormatter.format(status.getCreatedAt()) + "] ");
-        }
-
-        formattedTweet.fg(Color.BLUE).a('@' + status.getUser().getScreenName()).fg(Color.DEFAULT);
-        formattedTweet.a(": ");
-
-        if (status.isRetweet()) {
-            formattedTweet.a("ретвитнул ");
-            formattedTweet.fg(Color.BLUE).a('@' + status.getRetweetedStatus().getUser().getScreenName());
-            formattedTweet.fg(Color.DEFAULT).a(": " + status.getRetweetedStatus().getText());
-        } else {
-            formattedTweet.a(status.getText());
-            if (status.getRetweetCount() > 0) {
-                formattedTweet.a(" (").a(status.getRetweetCount()).a(" ");
-                formattedTweet.a(RussianWordForms.getWordForm("ретвит", status.getRetweetCount())).a(")");
-            }
-        }
-        return formattedTweet.toString();
-    }
 }
