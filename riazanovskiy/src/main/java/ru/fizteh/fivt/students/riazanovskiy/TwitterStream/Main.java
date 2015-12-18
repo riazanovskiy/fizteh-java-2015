@@ -7,14 +7,9 @@ import org.fusesource.jansi.AnsiConsole;
 import twitter4j.*;
 
 import java.util.Scanner;
-import java.util.concurrent.TimeUnit;
-
-import static org.fusesource.jansi.Ansi.ansi;
 
 class Main {
-    private static final int DELIMITER_LENGTH = 140;
     private static final int MAXIMUM_TRIES = 3;
-    private static LatLng currentLocation;
 
     public static void main(String[] args) {
         ArgumentParser argumentParser = new ArgumentParser();
@@ -34,6 +29,7 @@ class Main {
             argumentParser.setLimit(Integer.MAX_VALUE);
         }
 
+        LatLng currentLocation = null;
         if (!argumentParser.getLocation().isEmpty()) {
             currentLocation = GeocodeWrapper.getCoordinatesByString(argumentParser.getLocation());
         }
@@ -42,75 +38,14 @@ class Main {
 
         for (int tries = 0; tries < MAXIMUM_TRIES; tries++) {
             try {
-                printTweets(argumentParser);
-                System.exit(0);
+                new TweetPrinter(argumentParser, currentLocation).print();
+                waitUntilEndOfInput();
+                return;
             } catch (TwitterException ignored) {
                 System.err.println("Trying to reconnect");
             }
         }
         System.err.println("Giving up after " + MAXIMUM_TRIES + " tries");
-    }
-
-    static void printTweets(ArgumentParser argumentParser) throws TwitterException {
-        if (argumentParser.isStream()) {
-            printTweetsInStream(argumentParser);
-        } else {
-            printTweetsByQuery(argumentParser);
-        }
-    }
-
-    static void printTweetsByQuery(ArgumentParser argumentParser) throws TwitterException {
-        if (argumentParser.getKeywords().isEmpty()) {
-            System.err.println("Пустой запрос. Попробуйте --stream, если хотите видеть все твиты подряд");
-            return;
-        }
-        Twitter twitter = TwitterFactory.getSingleton();
-        Query query = new Query(argumentParser.getKeywords());
-        query.setCount(argumentParser.getLimit());
-
-        QueryResult result = twitter.search(query);
-        if (result.getCount() == 0) {
-            System.out.println("Нет твитов по запросу " + query);
-            return;
-        }
-
-        result.getTweets().stream().filter(status -> shouldShowTweet(argumentParser, status)).forEach(status
-                -> printSingleTweet(status, true));
-    }
-
-    static boolean shouldShowTweet(ArgumentParser argumentParser, Status status) {
-        return (!status.isRetweet() || argumentParser.isShowRetweets())
-                && ((currentLocation == null || (status.getGeoLocation() != null
-                && GeocodeWrapper.isNearby(currentLocation,
-                new GeocodeWrapper.Location(status.getGeoLocation().getLatitude(),
-                        status.getGeoLocation().getLongitude())))));
-    }
-
-    static void printTweetsInStream(ArgumentParser argumentParser) {
-        TwitterStream twitterStream = new TwitterStreamFactory().getInstance();
-
-        twitterStream.addListener(new StatusAdapter() {
-            @Override
-            public void onStatus(Status status) {
-                if (shouldShowTweet(argumentParser, status)) {
-                    printSingleTweet(status, false);
-                    try {
-                        TimeUnit.SECONDS.sleep(1);
-                    } catch (InterruptedException ignored) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            }
-        });
-
-        if (argumentParser.getKeywords().isEmpty()) {
-            twitterStream.sample();
-        } else {
-            FilterQuery query = new FilterQuery().track(argumentParser.getKeywords());
-            twitterStream.filter(query);
-        }
-
-        waitUntilEndOfInput();
     }
 
     private static void waitUntilEndOfInput() {
@@ -121,11 +56,4 @@ class Main {
             }
         }
     }
-
-    static void printSingleTweet(Status status, boolean showTime) {
-        String formattedTweet = new TweetFormatter(status, showTime).format();
-        System.out.println(formattedTweet);
-        System.out.println(new String(new char[DELIMITER_LENGTH]).replace('\0', '-'));
-    }
-
 }
