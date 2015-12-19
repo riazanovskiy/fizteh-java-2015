@@ -38,7 +38,8 @@ class Main {
 
         for (int tries = 0; tries < MAXIMUM_TRIES; tries++) {
             try {
-                new TweetPrinter(argumentParser, currentLocation).print();
+                new TweetPrinter(argumentParser, currentLocation,
+                        new TwitterStreamFactory().getInstance(), TwitterFactory.getSingleton()).print();
                 waitUntilEndOfInput();
                 return;
             } catch (TwitterException ignored) {

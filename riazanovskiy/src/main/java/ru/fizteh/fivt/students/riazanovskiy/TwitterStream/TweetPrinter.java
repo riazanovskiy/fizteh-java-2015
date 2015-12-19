@@ -9,10 +9,15 @@ public class TweetPrinter {
     private static final int DELIMITER_LENGTH = 140;
     private final ArgumentParser parameters;
     private final LatLng currentLocation;
+    private final TwitterStream twitterStream;
+    private final Twitter twitter;
 
-    public TweetPrinter(ArgumentParser parameters, LatLng currentLocation) {
+    public TweetPrinter(ArgumentParser parameters, LatLng currentLocation,
+                        TwitterStream twitterStream, Twitter twitter) {
         this.parameters = parameters;
         this.currentLocation = currentLocation;
+        this.twitterStream = twitterStream;
+        this.twitter = twitter;
     }
 
     void print() throws TwitterException {
@@ -29,7 +34,6 @@ public class TweetPrinter {
             return;
         }
 
-        Twitter twitter = TwitterFactory.getSingleton();
         Query query = new Query(parameters.getKeywords());
         query.setCount(parameters.getLimit());
 
@@ -52,18 +56,12 @@ public class TweetPrinter {
     }
 
     void printTweetsInStream() {
-        TwitterStream twitterStream = new TwitterStreamFactory().getInstance();
-
         twitterStream.addListener(new StatusAdapter() {
             @Override
             public void onStatus(Status status) {
                 if (shouldShowTweet(status)) {
                     printSingleTweet(status, false);
-                    try {
-                        TimeUnit.SECONDS.sleep(1);
-                    } catch (InterruptedException ignored) {
-                        Thread.currentThread().interrupt();
-                    }
+                    waitBetweenTweets();
                 }
             }
         });
@@ -76,7 +74,15 @@ public class TweetPrinter {
         }
     }
 
-    static void printSingleTweet(Status status, boolean showTime) {
+    void waitBetweenTweets() {
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    void printSingleTweet(Status status, boolean showTime) {
         String formattedTweet = new TweetFormatter(status, showTime).format();
         System.out.println(formattedTweet);
         System.out.println(new String(new char[DELIMITER_LENGTH]).replace('\0', '-'));
